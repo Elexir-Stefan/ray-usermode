@@ -1,0 +1,21 @@
+#!/bin/bash
+
+DIRS=`cat alluserprogs`
+
+echo -e "Building library..."
+
+    pushd ray/raylib
+    ./mkmake
+    make rebuild
+    popd
+
+echo -e "Building all modules ..."
+
+
+	for MODULE in $DIRS
+	do
+		pushd $MODULE
+		./mkmake
+		make rebuild
+		popd
+	done

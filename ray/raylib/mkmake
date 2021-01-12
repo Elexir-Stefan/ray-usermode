@@ -1,0 +1,112 @@
+#!/bin/sh
+
+CC=i686-pc-ray-g++
+LD=i686-pc-ray-ld
+INCLUDEDIR=../include
+OUTFILE=Makefile
+DEBUG=1
+if [ $DEBUG == 1 ]
+then
+	DEFS="-gdwarf-2 -ggdb"
+	OPT=0
+else
+	DEFS=""
+	OPT=3
+fi
+
+C_ARGS="$DEFS -I$INCLUDEDIR -O$OPT -c -Wall -Werror -fdata-sections -ffunction-sections"
+
+C_DIRS="video
+standard
+processes
+rdm
+ipc
+keyboard"
+
+echo -e " ========== GENERATING MAKEFILE ============"
+echo -e " include dir: $INCLUDEDIR"
+echo -e " CC args: $C_ARGS"
+echo -e " =========================================="
+
+echo -e "# NURNware Ray kernel modules">$OUTFILE
+echo -e "# (For use with Cold iGnition operating system)">>$OUTFILE
+echo -e "# Copyright (C) 2007 - NURNware Technologies">>$OUTFILE
+echo -e "\n">>$OUTFILE
+
+# Variables
+echo -e "CC=$CC">>$OUTFILE
+echo -e "C_ARGS=$C_ARGS">>$OUTFILE
+echo -e "\n">>$OUTFILE
+
+echo -e "all: modules">>$OUTFILE
+echo -e "\n">>$OUTFILE
+
+echo -e "clean:">>$OUTFILE
+echo -e "\t@-rm \`find . -iname '*.o'\`">>$OUTFILE
+echo -e "\n">>$OUTFILE
+
+echo -e "rebuild: clean modules">>$OUTFILE
+echo -e "\n">>$OUTFILE
+
+
+CFILES=0
+ISERR=0
+DIRS=""
+for CURDIR in $C_DIRS
+do
+	OBJECTS=""
+
+	for CURFILE in $CURDIR/*.[cS]*
+	do
+		if [ $ISERR == "0" ]
+		then
+			if [[ "$CURFILE" = *.cpp ]]
+			then
+				OBJFILE=${CURFILE%.cpp}.o
+			else
+				if [[ "$CURFILE" = *.S ]]
+				then
+					OBJFILE=${CURFILE%.S}.o
+				else
+					OBJFILE=""
+				fi
+			fi
+			echo -e "\t Getting headers for $CURFILE..."
+			HEADERS=`$CC $C_ARGS $CURFILE -M -MT $OBJFILE`
+			if [ $? != "0" ]
+			then
+			ISERR=1
+			fi
+	
+			echo -e "$HEADERS">>$OUTFILE
+			echo -e "\t@echo -e \"MODULE [$CURFILE]\"">>$OUTFILE
+			echo -e "\t@\$(CC) \$(C_ARGS) $CURFILE -o $OBJFILE">>$OUTFILE
+			echo -e "\n">>$OUTFILE
+	
+			OBJECTS="$OBJECTS $OBJFILE"
+	
+		else
+		echo -e "Aborting $CURFILE due to errors."
+		fi
+
+	CFILES=`expr $CFILES + 1`
+	done
+	
+	echo -e "$CURDIR.o: $OBJECTS">>$OUTFILE
+	echo -e "\t@echo -e \"Generating part $CURDIR\"">>$OUTFILE
+	echo -e "\t@\$(LD) -Ur -o $CURDIR.o $OBJECTS">>$OUTFILE
+	echo -e "\n">>$OUTFILE
+	
+	DIRS="$DIRS $CURDIR.o"
+done
+
+echo -e "Generating linker entry..."
+echo -e "modules: $DIRS">>$OUTFILE
+echo -e "\t@echo User library complete">>$OUTFILE
+
+if [ $ISERR == "0" ]
+then
+	echo -e "Makefile built successfully."
+else
+	echo -e "There were errors generating the Makefile!"
+fi

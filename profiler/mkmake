@@ -1,0 +1,143 @@
+#!/bin/bash
+
+NAMEFROM=module.name
+STATICFROM=static.parts
+CC=i686-pc-ray-g++
+LD=i686-pc-ray-ld
+INCLUDEDIR=../ray/include
+KSTAT_DIR=../ray/raylib
+RAYIMAGEPATH=../../RayKernel/rayimage
+RAYDRIVERCMD=insertdriver
+OUTFILE=Makefile
+DEBUG=1
+
+if [ -r $NAMEFROM ]
+then
+	MODFILE=`cat $NAMEFROM`
+else
+	echo -e "File '$NAMEFROM' needed to read module name from not found. Aborting."
+	exit 1
+fi
+
+if [ -r $STATICFROM ]
+then
+	STATFILES=`cat $STATICFROM`
+else
+	echo -e "File '$STATICFROM' needed to read parts that will be staticly compiled into the module $MODFILE."
+	exit 1
+fi
+	
+
+
+
+STATFILES="$STATFILES
+standard"
+
+for STATICFILE in $STATFILES
+do
+	STATICS="$STATICS $KSTAT_DIR/$STATICFILE.o"
+done
+
+
+if [ $DEBUG == 1 ]
+then
+	DEFS="-g3"
+	OPT=0
+else
+	DEFS=""
+	OPT=2
+fi
+
+C_ARGS="$DEFS -I$INCLUDEDIR -O$OPT -c -Wall -Wswitch-enum -Werror -fdata-sections -ffunction-sections -fstack-protector-all"
+LD_ARGS="-Wl,--gc-sections"
+
+#echo -e " ========== GENERATING MAKEFILE ============"
+#echo -e " include dir: $INCLUDEDIR"
+#echo -e " CC args: $C_ARGS"
+#echo -e " ==========================================="
+	
+
+
+echo -e "# NURNware Ray kernel module $MODFILE">$OUTFILE
+echo -e "# (For use with Cold iGnition operating system)">>$OUTFILE
+echo -e "# Copyright (C) 2007 - NURNware Technologies">>$OUTFILE
+echo -e "\n">>$OUTFILE
+
+# Variables
+echo -e "CC=$CC">>$OUTFILE
+echo -e "C_ARGS=$C_ARGS">>$OUTFILE
+echo -e "LD=$LD">>$OUTFILE
+echo -e "LD_ARGS=$LD_ARGS">>$OUTFILE
+echo -e "RAYIMAGEPATH=$RAYIMAGEPATH">>$OUTFILE
+echo -e "RAYDRIVERCMD=$RAYDRIVERCMD">>$OUTFILE
+echo -e "\n">>$OUTFILE
+
+echo -e "all: $MODFILE">>$OUTFILE
+echo -e "\n">>$OUTFILE
+echo -e "install: $MODFILE-install">>$OUTFILE
+echo -e "\n">>$OUTFILE
+
+echo -e "clean:">>$OUTFILE
+echo -e "\t@echo -e \"Deleting all object files...\"">>$OUTFILE
+echo -e "\t@-rm \`find . -iname '*.o'\`>/dev/null">>$OUTFILE
+echo -e "\n">>$OUTFILE
+
+echo -e "rebuild: clean $MODFILE">>$OUTFILE
+echo -e "\n">>$OUTFILE
+
+
+CFILES=0
+ISERR=0
+    for CURFILE in *.cpp
+    do
+	if [ $ISERR == "0" ]
+	then
+		if [[ "$CURFILE" = *.cpp ]]
+		then
+			OBJFILE=${CURFILE%.cpp}.o
+		else
+			OBJFILE=""
+		fi
+		echo -e "\t Getting headers for $CURFILE..."
+		HEADERS=`$CC $C_ARGS $CURFILE -MM -MT $OBJFILE`
+    		if [ $? != "0" ]
+		then
+		    ISERR=1
+		fi
+
+		echo -e "$HEADERS">>$OUTFILE
+		echo -e "\t@echo -e \"\t SUBPART OF MODULE [$CURFILE]\"">>$OUTFILE
+		echo -e "\t@\$(CC) \$(C_ARGS) $CURFILE -o $OBJFILE">>$OUTFILE
+		echo -e "\n">>$OUTFILE
+
+		ALLFILES="$ALLFILES $CURFILE"
+		OBJECTS="$OBJECTS $OBJFILE"
+
+	else
+	    echo -e "Aborting $CURFILE due to errors."
+	fi
+
+	CFILES=`expr $CFILES + 1`
+    done
+
+echo -e "Makefile $MODFILE"
+
+echo -e "$MODFILE: $OBJECTS">>$OUTFILE
+echo -e "\t@echo -e \"Building module $MODFILE\"">>$OUTFILE
+echo -e "\t@\$(CC) \$(LD_ARGS) -o $MODFILE $OBJECTS $STATICS">>$OUTFILE
+
+echo -e "$MODFILE-install: $MODFILE $OBJECTS">>$OUTFILE
+echo -e "\t@echo Installing module...">>$OUTFILE
+echo -e "\t@cd \$(RAYIMAGEPATH); ./\$(RAYDRIVERCMD) \$(CURDIR)/$MODFILE $MODFILE">>$OUTFILE
+
+echo -e "\n.PHONY: install">>$OUTFILE
+echo -e ".PHONY: $MODFILE-install">>$OUTFILE
+echo -e ".PHONY: all">>$OUTFILE
+
+
+if [ $ISERR == "0" ]
+then
+	echo -e "Makefile built successfully."
+else
+	echo -e "There were errors generating the Makefile!"
+fi

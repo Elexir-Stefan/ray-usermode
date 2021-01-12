@@ -1,0 +1,13 @@
+#!/bin/bash
+
+DIRS=`cat alluserprogs`
+
+echo -e "Installing all modules ..."
+
+
+	for MODULE in $DIRS
+	do
+		pushd $MODULE
+		make install
+		popd
+	done

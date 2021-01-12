@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?fileVersion 5.0.0?>
+
+<cproject storage_type_id="org.eclipse.cdt.core.XmlProjectDescriptionStorage2">
+<storageModule moduleId="org.eclipse.cdt.core.settings">
+<cconfiguration id="0.587916513">
+<storageModule externalCElementFile="0.587916513_org.eclipse.cdt.core.settings" id="0.587916513" name="Default"/>
+<storageModule externalCElementFile="0.587916513_cdtBuildSystem" version="4.0.0"/>
+<storageModule externalCElementFile="0.587916513_scannerConfiguration"/>
+<storageModule externalCElementFile="0.587916513_org.eclipse.cdt.core.externalSettings"/>
+<storageModule externalCElementFile="0.587916513_org.eclipse.cdt.core.language.mapping"/>
+<storageModule externalCElementFile="0.587916513_org.eclipse.cdt.make.core.buildtargets"/>
+<storageModule externalCElementFile="0.587916513_org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
+</cconfiguration>
+</storageModule>
+<storageModule moduleId="cdtBuildSystem" version="4.0.0">
+<project id="keyboard.null.1734243642" name="keyboard"/>
+</storageModule>
+</cproject>

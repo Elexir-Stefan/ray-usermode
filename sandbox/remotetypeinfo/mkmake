@@ -1,0 +1,98 @@
+#!/bin/sh
+
+NAMEFROM=module.name
+STATICFROM=static.parts
+CC=g++
+LD=ld
+INCLUDEDIR=../../ray/include
+OUTFILE=Makefile
+DEBUG=1
+
+MODFILE=types
+
+if [ $DEBUG == 1 ]
+then
+	DEFS="-g3"
+	OPT=0
+else
+	DEFS=""
+	OPT=2
+fi
+
+C_ARGS="$DEFS -I$INCLUDEDIR -O$OPT -c -Wall -Wswitch-enum -Werror"
+
+#echo -e " ========== GENERATING MAKEFILE ============"
+#echo -e " include dir: $INCLUDEDIR"
+#echo -e " CC args: $C_ARGS"
+#echo -e " ==========================================="
+	
+
+
+echo -e "# NURNware Ray kernel module $MODFILE">$OUTFILE
+echo -e "# (For use with Cold iGnition operating system)">>$OUTFILE
+echo -e "# Copyright (C) 2007 - NURNware Technologies">>$OUTFILE
+echo -e "\n">>$OUTFILE
+
+# Variables
+echo -e "CC=$CC">>$OUTFILE
+echo -e "C_ARGS=$C_ARGS">>$OUTFILE
+echo -e "LD=$LD">>$OUTFILE
+echo -e "\n">>$OUTFILE
+
+echo -e "all: $MODFILE">>$OUTFILE
+echo -e "\n">>$OUTFILE
+
+echo -e "clean:">>$OUTFILE
+echo -e "\t@echo -e \"Deleting all object files...\"">>$OUTFILE
+echo -e "\t@-rm \`find . -iname '*.o'\`>/dev/null">>$OUTFILE
+echo -e "\n">>$OUTFILE
+
+echo -e "rebuild: clean $MODFILE">>$OUTFILE
+echo -e "\n">>$OUTFILE
+
+
+CFILES=0
+ISERR=0
+    for CURFILE in *.cpp
+    do
+	if [ $ISERR == "0" ]
+	then
+		if [[ "$CURFILE" = *.cpp ]]
+		then
+			OBJFILE=${CURFILE%.cpp}.o
+		else
+			OBJFILE=""
+		fi
+		echo -e "\t Getting headers for $CURFILE..."
+		HEADERS=`$CC $C_ARGS $CURFILE -M -MT $OBJFILE`
+    		if [ $? != "0" ]
+		then
+		    ISERR=1
+		fi
+
+		echo -e "$HEADERS">>$OUTFILE
+		echo -e "\t@echo -e \"\t SUBPART OF MODULE [$CURFILE]\"">>$OUTFILE
+		echo -e "\t@\$(CC) \$(C_ARGS) $CURFILE -o $OBJFILE">>$OUTFILE
+		echo -e "\n">>$OUTFILE
+
+		ALLFILES="$ALLFILES $CURFILE"
+		OBJECTS="$OBJECTS $OBJFILE"
+
+	else
+	    echo -e "Aborting $CURFILE due to errors."
+	fi
+
+	CFILES=`expr $CFILES + 1`
+    done
+
+echo -e "Makefile $MODFILE"
+echo -e "$MODFILE: $OBJECTS">>$OUTFILE
+echo -e "\t@echo -e \"Building module $MODFILE\"">>$OUTFILE
+echo -e "\t@\$(CC) -o $MODFILE $OBJECTS">>$OUTFILE
+
+if [ $ISERR == "0" ]
+then
+	echo -e "Makefile built successfully."
+else
+	echo -e "There were errors generating the Makefile!"
+fi

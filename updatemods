@@ -1,0 +1,12 @@
+#!/bin/sh
+
+DIRS=`cat alluserprogs`
+
+echo -e "Updating mkmake script in"
+
+
+	for MODULE in $DIRS
+	do
+		cp template/mkmake $MODULE/
+		echo $MODULE
+	done
